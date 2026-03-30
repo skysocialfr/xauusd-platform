@@ -58,13 +58,25 @@ function ProposalCard({ proposal }) {
             </span>
             <span className="text-xs text-gray-400">{proposal.setup}</span>
           </div>
-          {/* Time + Strength */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600">{proposal.time}</span>
-            <StrengthBadge strength={proposal.strength} score={proposal.score} />
+          <StrengthBadge strength={proposal.strength} score={proposal.score} />
+        </div>
+
+        {/* Status + distance */}
+        <div className="flex items-center justify-between">
+          <ScoreStars score={proposal.score} />
+          <div className="flex items-center gap-1.5">
+            {proposal.isActive ? (
+              <span className="flex items-center gap-1 text-xs font-bold text-yellow-300 bg-yellow-900/50 border border-yellow-700/50 px-2 py-0.5 rounded animate-pulse">
+                ⚡ EN ZONE
+              </span>
+            ) : (
+              <span className="text-xs text-gray-500">
+                à <span className="text-gray-300 font-mono">{proposal.distPts} pts</span>
+                <span className="text-gray-600 ml-1">({proposal.distPct}%)</span>
+              </span>
+            )}
           </div>
         </div>
-        <ScoreStars score={proposal.score} />
       </div>
 
       {/* ── Price levels ── */}

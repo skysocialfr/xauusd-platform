@@ -496,8 +496,9 @@ export function generateTradeProposals(candles, smcData) {
   const { fvgs = [], orderBlocks = [], bosChoch = [], liquidity = [] } = smcData;
   const currentPrice = candles[candles.length - 1].close;
 
-  // Proximity = 0.8% of price  (XAUUSD ~3000 → ~24 pts)
-  const proximity = currentPrice * 0.008;
+  // Proximity élargie à 3% — on affiche tous les setups actifs
+  // et on indique la distance au prix actuel
+  const proximity = currentPrice * 0.03;
 
   // Last structural signals
   const lastBullBOS   = [...bosChoch].filter(b => b.direction === 'bullish').slice(-1)[0];
@@ -600,6 +601,10 @@ export function generateTradeProposals(candles, smcData) {
     const tp      = nextBSL ? parseFloat(nextBSL.level.toFixed(2)) : parseFloat((entry + risk * 2.5).toFixed(2));
     const rr      = risk > 0 ? ((tp - entry) / risk).toFixed(1) : 'N/A';
 
+    const distPts  = Math.abs(currentPrice - entry).toFixed(1);
+    const distPct  = ((Math.abs(currentPrice - entry) / currentPrice) * 100).toFixed(2);
+    const isActive = currentPrice >= fvg.bottom && currentPrice <= fvg.top;
+
     proposals.push({
       id:        `bull-${fvg.index}`,
       direction: 'BUY',
@@ -611,7 +616,11 @@ export function generateTradeProposals(candles, smcData) {
       reasons,
       setup:    nearOB ? 'FVG + Order Block' : 'Fair Value Gap',
       strength: score >= 4 ? 'Fort' : score === 3 ? 'Modéré' : 'Faible',
-      time:     new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      time:     new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      distPts,
+      distPct,
+      isActive,
+      status:   isActive ? 'EN ZONE' : currentPrice < entry ? 'PRIX EN DESSOUS' : 'PRIX AU-DESSUS'
     });
   }
 
@@ -698,6 +707,10 @@ export function generateTradeProposals(candles, smcData) {
     const tp      = nextSSL ? parseFloat(nextSSL.level.toFixed(2)) : parseFloat((entry - risk * 2.5).toFixed(2));
     const rr      = risk > 0 ? ((entry - tp) / risk).toFixed(1) : 'N/A';
 
+    const distPts  = Math.abs(currentPrice - entry).toFixed(1);
+    const distPct  = ((Math.abs(currentPrice - entry) / currentPrice) * 100).toFixed(2);
+    const isActive = currentPrice >= fvg.bottom && currentPrice <= fvg.top;
+
     proposals.push({
       id:        `bear-${fvg.index}`,
       direction: 'SELL',
@@ -709,7 +722,11 @@ export function generateTradeProposals(candles, smcData) {
       reasons,
       setup:    nearOB ? 'FVG + Order Block' : 'Fair Value Gap',
       strength: score >= 4 ? 'Fort' : score === 3 ? 'Modéré' : 'Faible',
-      time:     new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      time:     new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      distPts,
+      distPct,
+      isActive,
+      status:   isActive ? 'EN ZONE' : currentPrice > entry ? 'PRIX AU-DESSUS' : 'PRIX EN DESSOUS'
     });
   }
 

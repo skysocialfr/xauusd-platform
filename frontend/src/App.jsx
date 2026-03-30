@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import api from './utils/api.js';
 import {
   RefreshCw, TrendingUp, TrendingDown, Wifi, WifiOff,
-  AlertTriangle, Lightbulb, Activity, BarChart2, BookOpen
+  AlertTriangle, Activity, BarChart2, BookOpen,
+  Bell, FileText, Lightbulb
 } from 'lucide-react';
 
 import Chart          from './components/Chart.jsx';
@@ -10,6 +11,7 @@ import SignalsPanel   from './components/SignalsPanel.jsx';
 import Journal        from './components/Journal.jsx';
 import SessionsLegend from './components/SessionsLegend.jsx';
 import TradeProposals from './components/TradeProposals.jsx';
+import DailyReview    from './components/DailyReview.jsx';
 import { runSMCAnalysis, generateTradeProposals } from './utils/smc.js';
 
 const TIMEFRAMES = [
@@ -25,10 +27,10 @@ const REFRESH_INTERVAL = 30_000;
 
 // ── Mobile bottom nav tabs ────────────────────────────────────────────────
 const MOBILE_TABS = [
-  { id: 'chart',     label: 'Chart',    Icon: BarChart2  },
-  { id: 'signals',   label: 'Signaux',  Icon: Activity   },
-  { id: 'proposals', label: 'Idées',    Icon: Lightbulb  },
-  { id: 'journal',   label: 'Journal',  Icon: BookOpen   },
+  { id: 'chart',   label: 'Chart',   Icon: BarChart2 },
+  { id: 'alertes', label: 'Alertes', Icon: Bell      },
+  { id: 'revue',   label: 'Revue',   Icon: FileText  },
+  { id: 'journal', label: 'Journal', Icon: BookOpen  },
 ];
 
 export default function App() {
@@ -42,8 +44,8 @@ export default function App() {
   const [error,      setError]      = useState(null);
   const [isMock,     setIsMock]     = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
-  const [rightTab,   setRightTab]   = useState('signals');   // desktop right panel
-  const [mobileTab,  setMobileTab]  = useState('chart');     // mobile bottom nav
+  const [rightTab,   setRightTab]   = useState('signals');  // desktop right panel
+  const [mobileTab,  setMobileTab]  = useState('chart');    // mobile bottom nav
   const prevPriceRef = useRef(null);
 
   // ── Fetch candles ────────────────────────────────────────────────────────
@@ -122,7 +124,7 @@ export default function App() {
     priceDir === 'up'   ? 'text-emerald-400' :
     priceDir === 'down' ? 'text-red-400'     : 'text-white';
 
-  // ── Shared sub-components ────────────────────────────────────────────────
+  // ── Chart content ────────────────────────────────────────────────────────
   const chartContent = candles.length === 0 && !loading ? (
     <div className="flex items-center justify-center h-full">
       <div className="text-center">
@@ -167,7 +169,6 @@ export default function App() {
         <div className="flex items-center gap-2">
           <span className="text-yellow-400 font-black tracking-tight text-base">XAU</span>
           <span className="text-gray-500 text-sm">/USD</span>
-          {/* subtitle hidden on small screens */}
           <span className="hidden md:inline text-xs text-gray-600 font-medium uppercase tracking-widest ml-1">
             SMC Scalping
           </span>
@@ -178,7 +179,7 @@ export default function App() {
           )}
         </div>
 
-        {/* Live price — always visible */}
+        {/* Live price */}
         <div className="flex items-center gap-1.5">
           {priceDir === 'up'   && <TrendingUp   size={14} className="text-emerald-400" />}
           {priceDir === 'down' && <TrendingDown  size={14} className="text-red-400"     />}
@@ -188,9 +189,8 @@ export default function App() {
           <span className="text-xs text-gray-500 hidden sm:inline">USD/oz</span>
         </div>
 
-        {/* Controls — timeframe + refresh */}
+        {/* Controls */}
         <div className="flex items-center gap-2">
-          {/* Timeframe hidden on mobile (shown below chart instead) */}
           <div className="hidden md:flex">{timeframeBar}</div>
 
           <button onClick={() => fetchCandles(timeframe)} disabled={loading}
@@ -199,7 +199,6 @@ export default function App() {
             <span className="hidden sm:inline">{loading ? 'Chargement…' : 'Refresh'}</span>
           </button>
 
-          {/* Connection dot */}
           <div className="flex items-center gap-1 text-xs text-gray-500">
             {error
               ? <WifiOff size={12} className="text-red-400" />
@@ -226,11 +225,10 @@ export default function App() {
 
       {/* ══════════════════════════════════════════
           MOBILE LAYOUT  (< md)
-          Full-screen tabs switched by bottom nav
       ══════════════════════════════════════════ */}
       <div className="flex md:hidden flex-1 flex-col overflow-hidden">
 
-        {/* Mobile timeframe bar (visible only on chart tab) */}
+        {/* Timeframe bar (chart tab only) */}
         {mobileTab === 'chart' && (
           <div className="flex items-center justify-center py-1.5 px-3 bg-dark-800 border-b border-dark-600 shrink-0">
             {timeframeBar}
@@ -239,43 +237,55 @@ export default function App() {
 
         {/* Tab content */}
         <div className="flex-1 overflow-hidden">
-          {mobileTab === 'chart'     && chartContent}
-          {mobileTab === 'signals'   && <SignalsPanel   smcData={smcData} />}
-          {mobileTab === 'proposals' && <TradeProposals proposals={proposals} />}
-          {mobileTab === 'journal'   && (
-            <div className="h-full overflow-y-auto">
+          {mobileTab === 'chart'   && chartContent}
+          {mobileTab === 'alertes' && (
+            <div className="h-full overflow-hidden">
+              <TradeProposals proposals={proposals} />
+            </div>
+          )}
+          {mobileTab === 'revue'   && (
+            <DailyReview candles={candles} smcData={smcData} livePrice={livePrice} />
+          )}
+          {mobileTab === 'journal' && (
+            <div className="h-full overflow-hidden">
               <Journal />
             </div>
           )}
         </div>
 
-        {/* Bottom navigation */}
-        <nav className="flex shrink-0 bg-dark-800 border-t border-dark-600 safe-area-inset-bottom">
+        {/* ── Premium mobile bottom navigation ── */}
+        <nav className="flex shrink-0 bg-[#0d0d14] border-t border-dark-600 safe-area-inset-bottom"
+          style={{ height: '64px' }}>
           {MOBILE_TABS.map(({ id, label, Icon }) => {
             const active = mobileTab === id;
-            // Badge counts
             const badge =
-              id === 'signals'   ? (smcData.fvgs?.length || 0) + (smcData.orderBlocks?.length || 0) :
-              id === 'proposals' ? proposals.length : 0;
+              id === 'alertes' ? proposals.length : 0;
 
             return (
               <button key={id} onClick={() => setMobileTab(id)}
-                className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-all relative ${
-                  active ? 'text-blue-400' : 'text-gray-500 hover:text-gray-300'
+                className={`flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-all relative ${
+                  active ? 'text-yellow-400' : 'text-gray-600 hover:text-gray-400'
                 }`}>
-                {/* Active indicator */}
-                {active && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-blue-500 rounded-full" />}
+                {/* Active indicator dot above icon */}
+                {active && (
+                  <span className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-yellow-400 rounded-full" />
+                )}
                 <div className="relative">
-                  <Icon size={18} />
+                  <Icon
+                    size={20}
+                    className={active ? 'text-yellow-400' : 'text-gray-600'}
+                    strokeWidth={active ? 2.5 : 1.8}
+                    fill={active ? 'currentColor' : 'none'}
+                  />
                   {badge > 0 && !active && (
-                    <span className={`absolute -top-1 -right-1.5 text-xs font-bold px-1 rounded-full leading-none py-0.5 ${
-                      id === 'proposals' ? 'bg-yellow-500 text-black' : 'bg-blue-600 text-white'
-                    }`}>
+                    <span className="absolute -top-1 -right-1.5 text-xs font-bold px-1 rounded-full leading-none py-0.5 bg-yellow-500 text-black">
                       {badge}
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-medium">{label}</span>
+                <span className={`text-xs transition-all ${active ? 'font-bold text-yellow-400' : 'font-normal text-gray-600'}`}>
+                  {label}
+                </span>
               </button>
             );
           })}
@@ -284,7 +294,6 @@ export default function App() {
 
       {/* ══════════════════════════════════════════
           DESKTOP LAYOUT  (≥ md)
-          Chart + right panel side by side + journal
       ══════════════════════════════════════════ */}
       <div className="hidden md:flex flex-1 overflow-hidden">
 
@@ -293,46 +302,58 @@ export default function App() {
           {chartContent}
         </div>
 
-        {/* Right panel — tabbed */}
+        {/* Right panel — 3 tabs: Signaux | Alertes | Revue */}
         <div className="w-72 shrink-0 flex flex-col overflow-hidden border-l border-dark-600">
 
           {/* Tab bar */}
           <div className="flex shrink-0 bg-dark-800 border-b border-dark-600">
             <button onClick={() => setRightTab('signals')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-all border-b-2 ${
+              className={`flex-1 flex items-center justify-center gap-1 py-2 text-xs font-semibold transition-all border-b-2 ${
                 rightTab === 'signals'
                   ? 'border-blue-500 text-blue-400 bg-dark-700/50'
                   : 'border-transparent text-gray-500 hover:text-gray-300'
               }`}>
-              <Activity size={12} />
-              Signaux SMC
+              <Activity size={11} />
+              Signaux
               {smcData.fvgs && (
                 <span className="ml-0.5 bg-dark-600 text-gray-400 text-xs px-1.5 rounded-full">
                   {(smcData.fvgs?.length || 0) + (smcData.orderBlocks?.length || 0)}
                 </span>
               )}
             </button>
-            <button onClick={() => setRightTab('proposals')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-all border-b-2 ${
-                rightTab === 'proposals'
+
+            <button onClick={() => setRightTab('alertes')}
+              className={`flex-1 flex items-center justify-center gap-1 py-2 text-xs font-semibold transition-all border-b-2 ${
+                rightTab === 'alertes'
                   ? 'border-yellow-500 text-yellow-400 bg-dark-700/50'
                   : 'border-transparent text-gray-500 hover:text-gray-300'
               }`}>
-              <Lightbulb size={12} />
-              Trade Ideas
+              <Bell size={11} />
+              Alertes
               {proposals.length > 0 && (
                 <span className="ml-0.5 bg-yellow-900/60 text-yellow-400 text-xs px-1.5 rounded-full animate-pulse">
                   {proposals.length}
                 </span>
               )}
             </button>
+
+            <button onClick={() => setRightTab('revue')}
+              className={`flex-1 flex items-center justify-center gap-1 py-2 text-xs font-semibold transition-all border-b-2 ${
+                rightTab === 'revue'
+                  ? 'border-yellow-500 text-yellow-400 bg-dark-700/50'
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}>
+              <FileText size={11} />
+              Revue
+            </button>
           </div>
 
           <div className="flex-1 overflow-hidden">
-            {rightTab === 'signals'
-              ? <SignalsPanel   smcData={smcData}     />
-              : <TradeProposals proposals={proposals} />
-            }
+            {rightTab === 'signals' && <SignalsPanel   smcData={smcData}     />}
+            {rightTab === 'alertes' && <TradeProposals proposals={proposals} />}
+            {rightTab === 'revue'   && (
+              <DailyReview candles={candles} smcData={smcData} livePrice={livePrice} />
+            )}
           </div>
         </div>
       </div>

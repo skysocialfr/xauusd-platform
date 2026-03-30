@@ -38,11 +38,20 @@ function ProposalCard({ proposal }) {
   const [expanded, setExpanded] = useState(false);
   const isBuy = proposal.direction === 'BUY';
 
-  const borderColor   = isBuy ? 'border-emerald-700/60' : 'border-red-700/60';
-  const headerBg      = isBuy ? 'bg-emerald-950/40'     : 'bg-red-950/40';
-  const directionBg   = isBuy ? 'bg-emerald-500'        : 'bg-red-500';
-  const priceColor    = isBuy ? 'text-emerald-400'       : 'text-red-400';
-  const Icon          = isBuy ? TrendingUp               : TrendingDown;
+  const borderColor  = isBuy ? 'border-emerald-700/60' : 'border-red-700/60';
+  const headerBg     = isBuy ? 'bg-emerald-950/40'     : 'bg-red-950/40';
+  const directionBg  = isBuy ? 'bg-emerald-500'        : 'bg-red-500';
+  const priceColor   = isBuy ? 'text-emerald-400'      : 'text-red-400';
+  const Icon         = isBuy ? TrendingUp              : TrendingDown;
+
+  // "SURVEILLER" badge: within 1% of the zone mid-price
+  const zoneMid    = proposal.entry;
+  const withinPct  = proposal.distPct !== undefined ? parseFloat(proposal.distPct) : null;
+  const isSurveill = !proposal.isActive && withinPct !== null && withinPct <= 1.0;
+
+  // First reason (always shown)
+  const firstReason    = proposal.reasons?.[0];
+  const remainingCount = proposal.reasons?.length > 1 ? proposal.reasons.length - 1 : 0;
 
   return (
     <div className={`rounded-lg border ${borderColor} overflow-hidden mb-2`}>
@@ -61,13 +70,17 @@ function ProposalCard({ proposal }) {
           <StrengthBadge strength={proposal.strength} score={proposal.score} />
         </div>
 
-        {/* Status + distance */}
+        {/* Status badges + score stars */}
         <div className="flex items-center justify-between">
           <ScoreStars score={proposal.score} />
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {proposal.isActive ? (
-              <span className="flex items-center gap-1 text-xs font-bold text-yellow-300 bg-yellow-900/50 border border-yellow-700/50 px-2 py-0.5 rounded animate-pulse">
+              <span className="flex items-center gap-1.5 text-sm font-extrabold text-yellow-200 bg-yellow-600/80 border-2 border-yellow-400/80 px-3 py-1 rounded-lg animate-pulse shadow-lg shadow-yellow-500/20">
                 ⚡ EN ZONE
+              </span>
+            ) : isSurveill ? (
+              <span className="flex items-center gap-1 text-xs font-bold text-orange-200 bg-orange-700/60 border border-orange-500/60 px-2.5 py-0.5 rounded-lg">
+                👁 SURVEILLER
               </span>
             ) : (
               <span className="text-xs text-gray-500">
@@ -95,7 +108,30 @@ function ProposalCard({ proposal }) {
         </div>
       </div>
 
-      {/* ── RR + toggle ── */}
+      {/* ── First reason (always visible) ── */}
+      {firstReason && (
+        <div className="px-3 py-2 bg-dark-800/40 border-t border-dark-600/30">
+          <div className="flex gap-2">
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
+              isBuy ? 'bg-emerald-900/80 text-emerald-300' : 'bg-red-900/80 text-red-300'
+            }`}>1</div>
+            <div>
+              <div className="text-xs font-semibold text-gray-200 mb-0.5 flex items-center gap-1">
+                <span>{firstReason.icon}</span>
+                <span>{firstReason.title}</span>
+              </div>
+              <div className="text-xs text-gray-400 leading-relaxed">
+                {firstReason.detail.length > 100
+                  ? firstReason.detail.slice(0, 100) + '…'
+                  : firstReason.detail
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RR + expand toggle ── */}
       <div
         className="flex items-center justify-between px-3 py-1.5 bg-dark-700/50 cursor-pointer hover:bg-dark-600/50 transition-colors"
         onClick={() => setExpanded(v => !v)}
@@ -110,20 +146,21 @@ function ProposalCard({ proposal }) {
           </span>
         </div>
         <div className="flex items-center gap-1 text-xs text-gray-500">
-          <span>{expanded ? 'Masquer' : `Voir analyse (${proposal.reasons.length} raisons)`}</span>
+          {remainingCount > 0 && (
+            <span>{expanded ? 'Masquer' : `Voir analyse complète (+${remainingCount})`}</span>
+          )}
           {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </div>
       </div>
 
-      {/* ── Expanded analysis ── */}
+      {/* ── Expanded: remaining reasons ── */}
       {expanded && (
         <div className="px-3 py-2 bg-dark-900/80 border-t border-dark-600/40 space-y-3">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
-            Analyse & Justifications
+            Analyse complète
           </div>
           {proposal.reasons.map((reason, i) => (
             <div key={i} className="flex gap-2">
-              {/* Number + icon */}
               <div className="flex flex-col items-center shrink-0">
                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                   isBuy ? 'bg-emerald-900/80 text-emerald-300' : 'bg-red-900/80 text-red-300'
@@ -134,7 +171,6 @@ function ProposalCard({ proposal }) {
                   <div className="w-px flex-1 bg-dark-600 mt-1" />
                 )}
               </div>
-              {/* Content */}
               <div className="pb-2">
                 <div className="text-xs font-semibold text-gray-200 mb-0.5 flex items-center gap-1">
                   <span>{reason.icon}</span>

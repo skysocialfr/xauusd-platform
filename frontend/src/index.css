@@ -62,3 +62,17 @@ html, body, #root {
   background-color: #12121a;
   color: #e5e7eb;
 }
+
+/* Toast slide-in animation */
+@keyframes slide-in {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out forwards;
+}
+
+/* Safe area bottom (iPhone notch) */
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

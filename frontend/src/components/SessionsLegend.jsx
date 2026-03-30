@@ -8,10 +8,20 @@ const SESSIONS = [
   { name: 'New York',         hours: '12:00–21:00 UTC', color: 'bg-orange-500/70' },
 ];
 
-export default function SessionsLegend() {
+export default function SessionsLegend({ inline = false }) {
   const currentSession = getCurrentSession();
   const now = new Date();
   const utcTime = now.toISOString().slice(11, 16) + ' UTC';
+
+  if (inline) {
+    return (
+      <div className="flex items-center gap-2">
+        <Clock size={11} className="text-gray-600" />
+        <span className="text-gray-600 text-xs">{utcTime}</span>
+        <span className="text-yellow-500 font-semibold text-xs">{currentSession}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3 px-3 py-1.5 bg-dark-800 border-b border-dark-600">
